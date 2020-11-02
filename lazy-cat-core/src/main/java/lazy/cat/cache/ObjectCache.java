@@ -1,15 +1,15 @@
 package lazy.cat.cache;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
+/**
+ * @author EvHn
+ */
 public class ObjectCache {
     private Map<String, MethodCache> cache = new HashMap<>();
 
-    public void addMethod(String methodName) {
-        cache.put(methodName, new MethodCache());
+    public void addMethod(String methodName, long lifetime, int capacity) {
+        cache.put(methodName, new MethodCache(Objects.requireNonNull(Utils.createMethods(lifetime, capacity))));
     }
 
     public Optional<Object> get(String methodName, List<Object> list) {

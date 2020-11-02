@@ -13,6 +13,9 @@ import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+/**
+ * @author EvHn
+ */
 public class LazyClassCreator {
     private final TypeElement type;
     private final RoundEnvironment roundEnv;
@@ -35,10 +38,10 @@ public class LazyClassCreator {
     public TypeSpec create() throws LazyObjectProcessorException {
         LazyObject lazyObject = type.getAnnotation(LazyObject.class);
         List<? extends Element> methods = type.getEnclosedElements();
-        Map<String, MethodSpec> methodSpecs = roundEnv.getElementsAnnotatedWith(LazyMethod.class).stream()
-                .map(m -> (ExecutableElement) m)
-                .filter(methods::contains)
-                .collect(Collectors.toMap(Object::toString, this::createLazyMethod));
+        Map<String, ExecutableElement> els = roundEnv.getElementsAnnotatedWith(LazyMethod.class).stream()
+                .map(m -> (ExecutableElement) m).filter(methods::contains).collect(Collectors.toMap(Object::toString, m -> m));
+        List<MethodSpec> methodSpecs = els.values().stream().map(this::createLazyMethod)
+                .collect(Collectors.toList());
         List<MethodSpec> constructors = ElementFilter.constructorsIn(methods).stream()
                 .map(this::createConstructors).collect(Collectors.toList());
         return TypeSpec.classBuilder(lazyObject.prefix() + type.getSimpleName() + lazyObject.postfix())
@@ -46,9 +49,9 @@ public class LazyClassCreator {
                 .superclass(type.asType())
                 .addField(TypeName.get(ObjectCache.class), "cache", Modifier.PRIVATE)
                 .addMethods(constructors)
-                .addMethod(createInitMethod(methodSpecs.keySet()))
+                .addMethod(createInitMethod(els, lazyObject.cacheLifetime(), lazyObject.cacheCapacity()))
                 .addMethod(createLazyCallMethod())
-                .addMethods(methodSpecs.values()).build();
+                .addMethods(methodSpecs).build();
     }
 
     public MethodSpec createLazyMethod(ExecutableElement method) {
@@ -74,11 +77,16 @@ public class LazyClassCreator {
                 .addStatement("init()").build();
     }
 
-    public MethodSpec createInitMethod(Set<String> methodNames) {
+    public MethodSpec createInitMethod(Map<String, ExecutableElement> methods, long lifetime, int capacity) {
         MethodSpec.Builder builder = MethodSpec.methodBuilder("init")
                 .addModifiers(Modifier.PRIVATE)
                 .addStatement("cache = new lazy.cat.cache.ObjectCache()");
-        methodNames.forEach(methodName -> builder.addStatement("cache.addMethod($S)", methodName));
+        methods.forEach((key, val) -> {
+            LazyMethod lm = val.getAnnotation(LazyMethod.class);
+            long cacheLifetime = lm.cacheLifetime() != 0 ? lm.cacheLifetime() : lifetime;
+            int cacheCapacity = lm.cacheCapacity() != 0 ? lm.cacheCapacity() : capacity;
+            builder.addStatement("cache.addMethod($S, $L, $L)", key, cacheLifetime, cacheCapacity);
+        });
         return builder.build();
     }
 

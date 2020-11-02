@@ -11,6 +11,9 @@ import javax.lang.model.element.*;
 import java.io.IOException;
 import java.util.*;
 
+/**
+ * @author EvHn
+ */
 @AutoService(Processor.class)
 public class LazyObjectProcessor extends AbstractProcessor {
 

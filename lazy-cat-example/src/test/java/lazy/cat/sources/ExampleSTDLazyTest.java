@@ -1,43 +1,46 @@
 package lazy.cat.sources;
 
-import lazy.cat.examples.Example1;
+import lazy.cat.examples.ExampleSTD;
 import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class Example1LazyTest {
+/**
+ * @author EvHn
+ */
+public class ExampleSTDLazyTest {
 
-    private Example1 example1;
+    private ExampleSTD exampleSTD;
 
     @Before
     public void setUp() {
-        example1 = new Example1Lazy();
+        exampleSTD = new ExampleSTDLazy();
     }
 
     @Test
     public void getValue() {
-        int value = example1.getValue();
+        int value = exampleSTD.getValue();
         assertEquals(0, value);
-        value = example1.getValue();
+        value = exampleSTD.getValue();
         assertEquals(0, value);
     }
 
     @Test
     public void getSameString() {
-        String actual = example1.getSameString("str1");
+        String actual = exampleSTD.getSameString("str1");
         String expected = "str1";
         assertEquals(expected, actual);
-        actual = example1.getSameString("str1");
+        actual = exampleSTD.getSameString("str1");
         assertEquals(expected, actual);
     }
 
     @Test
     public void cat() {
-        String actual = example1.cat("str1", "str2");
+        String actual = exampleSTD.cat("str1", "str2");
         String expected = "str1str2";
         assertEquals(expected, actual);
-        actual = example1.cat("str1", "str2");
+        actual = exampleSTD.cat("str1", "str2");
         assertEquals(expected, actual);
     }
 }

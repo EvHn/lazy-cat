@@ -3,23 +3,19 @@ package lazy.cat.examples;
 import lazy.cat.annotations.LazyMethod;
 import lazy.cat.annotations.LazyObject;
 
-@LazyObject
-public class Example1 {
-
+/**
+ * @author EvHn
+ */
+@LazyObject(cacheLifetime = 1000L, cacheCapacity = 10)
+public class ExampleLTCap {
     private String name;
 
-    public Example1() {
-    }
-
-    public Example1(String name) {
-        this.name = name;
-    }
-
+    @LazyMethod(cacheLifetime = -1)
     public String getName() {
         return name;
     }
 
-    @LazyMethod
+    @LazyMethod(cacheLifetime = 500L, cacheCapacity = 100)
     public int getValue() {
         return 0;
     }
@@ -29,7 +25,7 @@ public class Example1 {
         return srt;
     }
 
-    @LazyMethod
+    @LazyMethod(cacheLifetime = 1001L, cacheCapacity = -1)
     public String cat(String str1, String str2) {
         return str1 + str2;
     }
