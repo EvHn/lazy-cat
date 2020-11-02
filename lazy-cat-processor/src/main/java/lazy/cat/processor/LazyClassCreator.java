@@ -50,7 +50,6 @@ public class LazyClassCreator {
                 .addField(TypeName.get(ObjectCache.class), "cache", Modifier.PRIVATE)
                 .addMethods(constructors)
                 .addMethod(createInitMethod(els, lazyObject.cacheLifetime(), lazyObject.cacheCapacity()))
-                .addMethod(createLazyCallMethod())
                 .addMethods(methodSpecs).build();
     }
 
@@ -61,8 +60,8 @@ public class LazyClassCreator {
         String params = method.getParameters().stream().map(VariableElement::getSimpleName)
                 .map(Object::toString).reduce(this::reduceParams).orElse("");
         return MethodSpec.overriding(method)
-                .addStatement("java.util.List<Object> list = List.of($N)", params)
-                .addStatement("return ($N)lazyCall($S, list, () -> super.$N($N))", typeMirror.toString(),
+                .addStatement("java.util.List<Object> list = java.util.List.of($N)", params)
+                .addStatement("return ($N)cache.lazyCall($S, list, () -> super.$N($N))", typeMirror.toString(),
                         method.toString(), method.getSimpleName(), params)
                 .build();
     }
@@ -88,21 +87,6 @@ public class LazyClassCreator {
             builder.addStatement("cache.addMethod($S, $L, $L)", key, cacheLifetime, cacheCapacity);
         });
         return builder.build();
-    }
-
-    public MethodSpec createLazyCallMethod() {
-        return MethodSpec.methodBuilder("lazyCall")
-                .addModifiers(Modifier.PRIVATE)
-                .returns(TypeName.get(Object.class))
-                .addParameter(ClassName.get(String.class), "methodName")
-                .addParameter(ClassName.get(List.class), "list")
-                .addParameter(ClassName.get(Supplier.class), "supplier")
-                .addStatement("java.util.Optional<Object> opt = cache.get(methodName, list)")
-                .addStatement("if(opt.isPresent()) return opt.get()")
-                .addStatement("Object obj = supplier.get()")
-                .addStatement("cache.put(methodName, list, obj)")
-                .addStatement("return obj")
-                .build();
     }
 
     public String reduceParams(String val1, String val2) {
