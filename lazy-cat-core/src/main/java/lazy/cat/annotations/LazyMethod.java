@@ -9,14 +9,13 @@ import java.lang.annotation.Target;
  * @author EvHn
  */
 @Target(ElementType.METHOD)
-@Retention(RetentionPolicy.CLASS)
+@Retention(RetentionPolicy.SOURCE)
 public @interface LazyMethod {
     /**
      * @return standard cache capacity of method.
      * override value in {@code LazyObject}
      */
     int cacheCapacity() default 0;
-
     /**
      * @return standard lifetime of values in cache
      * override value in {@code LazyObject}

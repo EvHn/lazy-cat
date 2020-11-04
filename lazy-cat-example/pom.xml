@@ -11,13 +11,6 @@
     <artifactId>lazy-cat-example</artifactId>
     <packaging>jar</packaging>
     <dependencies>
-        <!-- https://mvnrepository.com/artifact/junit/junit -->
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.12</version>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>org.lazy-cat</groupId>
             <artifactId>lazy-cat-core</artifactId>

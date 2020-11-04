@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
  * @author EvHn
  */
 @Target(ElementType.TYPE)
-@Retention(RetentionPolicy.CLASS)
+@Retention(RetentionPolicy.SOURCE)
 public @interface LazyObject {
     /**
      * @return package of the class name

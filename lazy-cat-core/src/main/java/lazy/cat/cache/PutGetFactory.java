@@ -7,9 +7,9 @@ import java.util.*;
 /**
  * @author EvHn
  */
-public class Utils {
+class PutGetFactory {
 
-    public static Pair<PutMethod, GetMethod> createMethods(long lifetime, int capacity) {
+    static Pair<PutMethod, GetMethod> createMethods(long lifetime, int capacity) {
         if(lifetime < 0 && capacity < 0) {
             return createPutAndGet();
         } else if(lifetime > 0 && capacity < 0) {
@@ -21,21 +21,19 @@ public class Utils {
     }
 
     private static Pair<PutMethod, GetMethod> createPutAndGet() {
-        return Pair.of(Utils::put, Utils::get);
+        return Pair.of(PutGetFactory::put, PutGetFactory::get);
     }
 
     private static Pair<PutMethod, GetMethod> createPutAndGetLT(long lifetime) {
-        return Pair.of(Utils::putLT, (cache, key) -> getLT(cache, key, lifetime));
+        return Pair.of(PutGetFactory::putLT, (cache, key) -> getLT(cache, key, lifetime));
     }
 
     private static Pair<PutMethod, GetMethod> createPutAndGetCap(int capacity) {
-        return Pair.of((cache, key, val) -> putCap(cache, key, val, capacity, new LinkedList<>(), Utils::put),
-                Utils::get);
+        return Pair.of(new PutMethodCap(capacity, PutGetFactory::put), PutGetFactory::get);
     }
 
     private static Pair<PutMethod, GetMethod> createPutAndGetCapLT(int capacity, long lifetime) {
-        return Pair.of((cache, key, val) -> putCap(cache, key, val, capacity, new LinkedList<>(), Utils::putLT),
-                ((cache, key) -> getLT(cache, key, lifetime)));
+        return Pair.of(new PutMethodCap(capacity, PutGetFactory::putLT), (cache, key) -> getLT(cache, key, lifetime));
     }
 
     private static Object get(Map<Object, Object> cache, Object key) {
@@ -47,8 +45,9 @@ public class Utils {
     }
 
     private static Object getLT(Map<Object, Object> cache, Object key, long lifetime) {
-        Pair<Date, Object> pair = ((Pair<Date, Object>) cache.get(key));
+        Pair<Date, Object> pair = ((Pair<Date, Object>) cache.remove(key));
         if(pair != null && new Date().getTime() - pair.getKey().getTime() <= lifetime) {
+            putLT(cache, key, pair.getValue());
             return pair.getValue();
         }
         return null;
@@ -59,11 +58,27 @@ public class Utils {
     }
 
     private static void putCap(Map<Object, Object> cache, Object key, Object val, int capacity,
-                              LinkedList<Object> queue, PutMethod put) {
-        if(queue.size() > capacity) {
-            cache.remove(queue.pollLast());
+                               LinkedList<Object> queue, PutMethod put) {
+        if(queue.size() >= capacity) {
+            cache.remove(queue.removeLast());
         }
         put.call(cache, key, val);
         queue.addFirst(key);
+    }
+
+    private static class PutMethodCap implements PutMethod {
+        private final int capacity;
+        private final PutMethod put;
+        private final LinkedList<Object> queue = new LinkedList<>();
+
+        public PutMethodCap(int capacity, PutMethod put) {
+            this.capacity = capacity;
+            this.put = put;
+        }
+
+        @Override
+        public void call(Map<Object, Object> cache, Object key, Object val) {
+            putCap(cache, key, val, capacity, queue, put);
+        }
     }
 }
