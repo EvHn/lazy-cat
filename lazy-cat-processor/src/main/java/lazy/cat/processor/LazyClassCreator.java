@@ -10,6 +10,7 @@ import javax.lang.model.element.*;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -30,7 +31,7 @@ public class LazyClassCreator {
                 TypeName.get(short.class), TypeName.get(byte.class), TypeName.get(void.class));
     }
 
-    public boolean isPossibleReturnType(TypeMirror typeMirror) {
+    private boolean isPossibleReturnType(TypeMirror typeMirror) {
         return possibleTypes.contains(TypeName.get(typeMirror));
     }
 
@@ -38,13 +39,15 @@ public class LazyClassCreator {
         LazyObject lazyObject = type.getAnnotation(LazyObject.class);
         List<? extends Element> methods = type.getEnclosedElements();
         Map<String, ExecutableElement> els = roundEnv.getElementsAnnotatedWith(LazyMethod.class).stream()
-                .map(m -> (ExecutableElement) m).filter(methods::contains).collect(Collectors.toMap(Object::toString, m -> m));
-        List<MethodSpec> methodSpecs = els.values().stream().map(this::createLazyMethod)
+                .map(m -> (ExecutableElement) m)
+                .filter(methods::contains)
+                .collect(Collectors.toMap(Object::toString, Function.identity()));
+        List<MethodSpec> methodSpecs = els.values().stream()
+                .map(this::createLazyMethod)
                 .collect(Collectors.toList());
         List<MethodSpec> constructors = ElementFilter.constructorsIn(methods).stream()
                 .map(this::createConstructors).collect(Collectors.toList());
         return TypeSpec.classBuilder(lazyObject.prefix() + type.getSimpleName() + lazyObject.postfix())
-                .addModifiers(Modifier.PUBLIC)
                 .superclass(type.asType())
                 .addField(TypeName.get(ObjectCache.class), "cache", Modifier.PRIVATE)
                 .addMethods(constructors)
@@ -52,7 +55,7 @@ public class LazyClassCreator {
                 .addMethods(methodSpecs).build();
     }
 
-    public MethodSpec createLazyMethod(ExecutableElement method) {
+    private MethodSpec createLazyMethod(ExecutableElement method) {
         TypeMirror typeMirror = method.getReturnType();
         if(!isPossibleReturnType(typeMirror))
             throw new LazyObjectProcessorException(String.format("Invalid return type: %s", TypeName.get(typeMirror)));
@@ -65,7 +68,7 @@ public class LazyClassCreator {
                 .build();
     }
 
-    public MethodSpec createConstructors(ExecutableElement el) {
+    private MethodSpec createConstructors(ExecutableElement el) {
         MethodSpec.Builder builder = MethodSpec.constructorBuilder();
         String params = el.getParameters().stream()
                 .peek(p -> builder.addParameter(TypeName.get(p.asType()), p.toString()))
@@ -75,7 +78,7 @@ public class LazyClassCreator {
                 .addStatement("init()").build();
     }
 
-    public MethodSpec createInitMethod(Map<String, ExecutableElement> methods, long lifetime, int capacity) {
+    private MethodSpec createInitMethod(Map<String, ExecutableElement> methods, long lifetime, int capacity) {
         MethodSpec.Builder builder = MethodSpec.methodBuilder("init")
                 .addModifiers(Modifier.PRIVATE)
                 .addStatement("cache = new lazy.cat.cache.ObjectCache()");
@@ -88,7 +91,7 @@ public class LazyClassCreator {
         return builder.build();
     }
 
-    public String reduceParams(String val1, String val2) {
+    private String reduceParams(String val1, String val2) {
         return val1 + ", " + val2;
     }
 }

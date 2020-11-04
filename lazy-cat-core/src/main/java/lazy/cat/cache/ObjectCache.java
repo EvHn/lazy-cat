@@ -7,7 +7,7 @@ import java.util.function.Supplier;
  * @author EvHn
  */
 public class ObjectCache {
-    private Map<String, MethodCache> cache = new HashMap<>();
+    private final Map<String, MethodCache> cache = new HashMap<>();
 
     public void addMethod(String methodName, long lifetime, int capacity) {
         cache.put(methodName, new MethodCache(Objects.requireNonNull(PutGetFactory.createMethods(lifetime, capacity))));

@@ -20,7 +20,6 @@
             <artifactId>javapoet</artifactId>
             <version>1.12.1</version>
         </dependency>
-
         <!-- Auto service annotation processor -->
         <dependency>
             <groupId>com.google.auto.service</groupId>

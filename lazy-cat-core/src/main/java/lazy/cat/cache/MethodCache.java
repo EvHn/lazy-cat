@@ -10,7 +10,7 @@ import java.util.Optional;
  * @author EvHn
  */
 class MethodCache {
-    protected final Map<Object, Object> cache;
+    private final Map<Object, Object> cache;
     private final PutMethod put;
     private final GetMethod get;
 

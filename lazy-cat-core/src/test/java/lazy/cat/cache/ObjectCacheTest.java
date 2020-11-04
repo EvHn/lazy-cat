@@ -73,9 +73,9 @@ public class ObjectCacheTest {
         cache.lazyCall(METHOD, List.of(1, 5), () -> "result7");
         Map<String, MethodCache> map = cache.getCache();
         assertEquals(3, map.get(METHOD).getCache().size());
-        assertEquals("result4", map.get(METHOD).get(List.of(1, 4)).get());
-        assertEquals("result6", map.get(METHOD).get(List.of(1, 6)).get());
-        assertEquals("result5", map.get(METHOD).get(List.of(1, 5)).get());
+        assertEquals("result4", ((Pair<Date, Object>) map.get(METHOD).getCache().get(List.of(1, 4))).getValue());
+        assertEquals("result6", ((Pair<Date, Object>) map.get(METHOD).getCache().get(List.of(1, 6))).getValue());
+        assertEquals("result5", ((Pair<Date, Object>) map.get(METHOD).getCache().get(List.of(1, 5))).getValue());
         Thread.sleep(10);
         assertTrue(map.get(METHOD).get(List.of(1, 4)).isEmpty());
         assertTrue(map.get(METHOD).get(List.of(1, 6)).isEmpty());
