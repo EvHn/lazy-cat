@@ -10,12 +10,11 @@ import java.util.Optional;
  * @author EvHn
  */
 class MethodCache {
-    private final Map<Object, Object> cache;
+    private final Map<Object, Object> cache = new HashMap<>();
     private final PutMethod put;
     private final GetMethod get;
 
     MethodCache(Pair<PutMethod, GetMethod> putGet) {
-        this.cache = new HashMap<>();
         this.put = putGet.getLeft();
         this.get = putGet.getRight();
     }

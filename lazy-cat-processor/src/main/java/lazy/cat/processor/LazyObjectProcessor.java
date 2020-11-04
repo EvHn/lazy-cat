@@ -28,7 +28,7 @@ public class LazyObjectProcessor extends AbstractProcessor {
 
     @Override
     public Set<String> getSupportedAnnotationTypes() {
-        return Set.of(LazyObject.class.getCanonicalName(), LazyMethod.class.getCanonicalName());
+        return Set.of(LazyObject.class.getCanonicalName());
     }
 
     @Override

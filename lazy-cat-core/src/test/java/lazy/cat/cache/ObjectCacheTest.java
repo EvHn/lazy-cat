@@ -35,13 +35,14 @@ public class ObjectCacheTest {
         cache.addMethod(METHOD, 5, -1);
         cache.lazyCall(METHOD, List.of(1, 2), () -> "result1");
         cache.lazyCall(METHOD, List.of(2, 1), () -> "result2");
-        Map<String, MethodCache> map = cache.getCache();
-        assertEquals(2, map.get(METHOD).getCache().size());
-        assertEquals("result1", ((Pair<Date, Object>) map.get(METHOD).getCache().get(List.of(1, 2))).getValue());
-        assertEquals("result2", ((Pair<Date, Object>) map.get(METHOD).getCache().get(List.of(2, 1))).getValue());
+        MethodCache methodCache = cache.getCache().get(METHOD);
+        Map<Object, Object> map = methodCache.getCache();
+        assertEquals(2, methodCache.getCache().size());
+        assertEquals("result1", ((Pair<Date, Object>) map.get(List.of(1, 2))).getValue());
+        assertEquals("result2", ((Pair<Date, Object>) map.get(List.of(2, 1))).getValue());
         Thread.sleep(10);
-        assertTrue(map.get(METHOD).get(List.of(1, 2)).isEmpty());
-        assertTrue(map.get(METHOD).get(List.of(2, 1)).isEmpty());
+        assertTrue(methodCache.get(List.of(1, 2)).isEmpty());
+        assertTrue(methodCache.get(List.of(2, 1)).isEmpty());
     }
 
     @Test
@@ -55,10 +56,11 @@ public class ObjectCacheTest {
         cache.lazyCall(METHOD, List.of(1, 6), () -> "result6");
         cache.lazyCall(METHOD, List.of(1, 5), () -> "result7");
         Map<String, MethodCache> map = cache.getCache();
-        assertEquals(3, map.get(METHOD).getCache().size());
-        assertEquals("result4", map.get(METHOD).get(List.of(1, 4)).get());
-        assertEquals("result6", map.get(METHOD).get(List.of(1, 6)).get());
-        assertEquals("result5", map.get(METHOD).get(List.of(1, 5)).get());
+        MethodCache methodCache = map.get(METHOD);
+        assertEquals(3, methodCache.getCache().size());
+        assertEquals("result4", methodCache.get(List.of(1, 4)).get());
+        assertEquals("result5", methodCache.get(List.of(1, 5)).get());
+        assertEquals("result6", methodCache.get(List.of(1, 6)).get());
     }
 
     @Test
@@ -71,14 +73,15 @@ public class ObjectCacheTest {
         cache.lazyCall(METHOD, List.of(1, 5), () -> "result5");
         cache.lazyCall(METHOD, List.of(1, 6), () -> "result6");
         cache.lazyCall(METHOD, List.of(1, 5), () -> "result7");
-        Map<String, MethodCache> map = cache.getCache();
-        assertEquals(3, map.get(METHOD).getCache().size());
-        assertEquals("result4", ((Pair<Date, Object>) map.get(METHOD).getCache().get(List.of(1, 4))).getValue());
-        assertEquals("result6", ((Pair<Date, Object>) map.get(METHOD).getCache().get(List.of(1, 6))).getValue());
-        assertEquals("result5", ((Pair<Date, Object>) map.get(METHOD).getCache().get(List.of(1, 5))).getValue());
+        MethodCache methodCache = cache.getCache().get(METHOD);
+        assertEquals(3, methodCache.getCache().size());
+        Map<Object, Object> map = methodCache.getCache();
+        assertEquals("result4", ((Pair<Date, Object>) map.get(List.of(1, 4))).getValue());
+        assertEquals("result5", ((Pair<Date, Object>) map.get(List.of(1, 5))).getValue());
+        assertEquals("result6", ((Pair<Date, Object>) map.get(List.of(1, 6))).getValue());
         Thread.sleep(10);
-        assertTrue(map.get(METHOD).get(List.of(1, 4)).isEmpty());
-        assertTrue(map.get(METHOD).get(List.of(1, 6)).isEmpty());
-        assertTrue(map.get(METHOD).get(List.of(1, 5)).isEmpty());
+        assertTrue(methodCache.get(List.of(1, 4)).isEmpty());
+        assertTrue(methodCache.get(List.of(1, 6)).isEmpty());
+        assertTrue(methodCache.get(List.of(1, 5)).isEmpty());
     }
 }

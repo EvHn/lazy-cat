@@ -24,6 +24,10 @@ public @interface LazyObject {
      */
     String prefix() default "";
     /**
+     * @return init method prefix
+     */
+    String initPrefix() default "";
+    /**
      * @return standard cache capacity of methods
      */
     int cacheCapacity() default -1;

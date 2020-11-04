@@ -16,12 +16,12 @@ import java.util.stream.Collectors;
 /**
  * @author EvHn
  */
-public class LazyClassCreator {
+class LazyClassCreator {
     private final TypeElement type;
     private final RoundEnvironment roundEnv;
     private final List<TypeName> possibleTypes;
 
-    public LazyClassCreator(TypeElement type, RoundEnvironment roundEnv) {
+    LazyClassCreator(TypeElement type, RoundEnvironment roundEnv) {
         this.type = type;
         this.roundEnv = roundEnv;
         possibleTypes = List.of(TypeName.get(Integer.class), TypeName.get(Long.class), TypeName.get(Double.class),
@@ -35,7 +35,7 @@ public class LazyClassCreator {
         return possibleTypes.contains(TypeName.get(typeMirror));
     }
 
-    public TypeSpec create() throws LazyObjectProcessorException {
+    TypeSpec create() throws LazyObjectProcessorException {
         LazyObject lazyObject = type.getAnnotation(LazyObject.class);
         List<? extends Element> methods = type.getEnclosedElements();
         Map<String, ExecutableElement> els = roundEnv.getElementsAnnotatedWith(LazyMethod.class).stream()
@@ -51,16 +51,20 @@ public class LazyClassCreator {
                 .superclass(type.asType())
                 .addField(TypeName.get(ObjectCache.class), "cache", Modifier.PRIVATE)
                 .addMethods(constructors)
-                .addMethod(createInitMethod(els, lazyObject.cacheLifetime(), lazyObject.cacheCapacity()))
-                .addMethods(methodSpecs).build();
+                .addMethod(createInitMethod(els, lazyObject.cacheLifetime(), lazyObject.cacheCapacity(),
+                        lazyObject.initPrefix()))
+                .addMethods(methodSpecs)
+                .build();
     }
 
     private MethodSpec createLazyMethod(ExecutableElement method) {
         TypeMirror typeMirror = method.getReturnType();
         if(!isPossibleReturnType(typeMirror))
             throw new LazyObjectProcessorException(String.format("Invalid return type: %s", TypeName.get(typeMirror)));
-        String params = method.getParameters().stream().map(VariableElement::getSimpleName)
-                .map(Object::toString).reduce(this::reduceParams).orElse("");
+        String params = method.getParameters().stream()
+                .map(VariableElement::getSimpleName)
+                .map(Object::toString)
+                .reduce(this::catParams).orElse("");
         return MethodSpec.overriding(method)
                 .addStatement("java.util.List<Object> list = java.util.List.of($N)", params)
                 .addStatement("return ($N)cache.lazyCall($S, list, () -> super.$N($N))", typeMirror.toString(),
@@ -72,26 +76,28 @@ public class LazyClassCreator {
         MethodSpec.Builder builder = MethodSpec.constructorBuilder();
         String params = el.getParameters().stream()
                 .peek(p -> builder.addParameter(TypeName.get(p.asType()), p.toString()))
-                .map(Objects::toString).reduce(this::reduceParams).orElse("");
+                .map(Objects::toString).reduce(this::catParams).orElse("");
         return builder
                 .addStatement("super($N)", params)
-                .addStatement("init()").build();
+                .addStatement("init()")
+                .build();
     }
 
-    private MethodSpec createInitMethod(Map<String, ExecutableElement> methods, long lifetime, int capacity) {
-        MethodSpec.Builder builder = MethodSpec.methodBuilder("init")
+    private MethodSpec createInitMethod(Map<String, ExecutableElement> methods, long lifetime, int capacity,
+                                        String prefix) {
+        MethodSpec.Builder builder = MethodSpec.methodBuilder("init" + prefix)
                 .addModifiers(Modifier.PRIVATE)
                 .addStatement("cache = new lazy.cat.cache.ObjectCache()");
         methods.forEach((key, val) -> {
             LazyMethod lm = val.getAnnotation(LazyMethod.class);
-            long cacheLifetime = lm.cacheLifetime() != 0 ? lm.cacheLifetime() : lifetime;
+            long cacheLifetime = lm.cacheLifetime() != 0L ? lm.cacheLifetime() : lifetime;
             int cacheCapacity = lm.cacheCapacity() != 0 ? lm.cacheCapacity() : capacity;
             builder.addStatement("cache.addMethod($S, $L, $L)", key, cacheLifetime, cacheCapacity);
         });
         return builder.build();
     }
 
-    private String reduceParams(String val1, String val2) {
+    private String catParams(String val1, String val2) {
         return val1 + ", " + val2;
     }
 }
