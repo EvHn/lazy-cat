@@ -29,11 +29,15 @@ class PutGetFactory {
     }
 
     private static Pair<PutMethod, GetMethod> createPutAndGetCap(int capacity) {
-        return Pair.of(new PutMethodCap(capacity, PutGetFactory::put), PutGetFactory::get);
+        LinkedList<Object> queue = new LinkedList<>();
+        return Pair.of((cache, key, val) -> putCap(cache, key, val, capacity, queue, PutGetFactory::put),
+                PutGetFactory::get);
     }
 
     private static Pair<PutMethod, GetMethod> createPutAndGetCapLT(int capacity, long lifetime) {
-        return Pair.of(new PutMethodCap(capacity, PutGetFactory::putLT), (cache, key) -> getLT(cache, key, lifetime));
+        LinkedList<Object> queue = new LinkedList<>();
+        return Pair.of((cache, key, val) -> putCap(cache, key, val, capacity, queue, PutGetFactory::putLT),
+                (cache, key) -> getLT(cache, key, lifetime));
     }
 
     private static Object get(Map<Object, Object> cache, Object key) {
@@ -64,21 +68,5 @@ class PutGetFactory {
         }
         put.call(cache, key, val);
         queue.addFirst(key);
-    }
-
-    private static class PutMethodCap implements PutMethod {
-        private final int capacity;
-        private final PutMethod put;
-        private final LinkedList<Object> queue = new LinkedList<>();
-
-        public PutMethodCap(int capacity, PutMethod put) {
-            this.capacity = capacity;
-            this.put = put;
-        }
-
-        @Override
-        public void call(Map<Object, Object> cache, Object key, Object val) {
-            putCap(cache, key, val, capacity, queue, put);
-        }
     }
 }
