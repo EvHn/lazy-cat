@@ -3,7 +3,6 @@ package lazy.cat.processor;
 import com.google.auto.service.AutoService;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeSpec;
-import lazy.cat.annotations.LazyMethod;
 import lazy.cat.annotations.LazyObject;
 
 import javax.annotation.processing.*;

@@ -3,6 +3,8 @@ package lazy.cat.cache;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * @author EvHn
@@ -10,14 +12,8 @@ import java.util.*;
 class PutGetFactory {
 
     static Pair<PutMethod, GetMethod> createMethods(long lifetime, int capacity) {
-        if(lifetime < 0 && capacity < 0) {
-            return createPutAndGet();
-        } else if(lifetime > 0 && capacity < 0) {
-            return createPutAndGetLT(lifetime);
-        } else if(lifetime < 0 && capacity > 0) {
-            return createPutAndGetCap(capacity);
-        }
-        return createPutAndGetCapLT(capacity, lifetime);
+        Pair<PutMethod, GetMethod> pair = (lifetime < 0) ? createPutAndGet() : createPutAndGetLT(lifetime);
+        return (capacity > 0) ? createPutAndGetCap(capacity, pair) : pair;
     }
 
     private static Pair<PutMethod, GetMethod> createPutAndGet() {
@@ -28,16 +24,11 @@ class PutGetFactory {
         return Pair.of(PutGetFactory::putLT, (cache, key) -> getLT(cache, key, lifetime));
     }
 
-    private static Pair<PutMethod, GetMethod> createPutAndGetCap(int capacity) {
+    private static Pair<PutMethod, GetMethod> createPutAndGetCap(int capacity, Pair<PutMethod, GetMethod> pair) {
         LinkedList<Object> queue = new LinkedList<>();
-        return Pair.of((cache, key, val) -> putCap(cache, key, val, capacity, queue, PutGetFactory::put),
-                (cache, key) -> getCap(cache, key, queue, PutGetFactory::get));
-    }
-
-    private static Pair<PutMethod, GetMethod> createPutAndGetCapLT(int capacity, long lifetime) {
-        LinkedList<Object> queue = new LinkedList<>();
-        return Pair.of((cache, key, val) -> putCap(cache, key, val, capacity, queue, PutGetFactory::putLT),
-                (cache, key) -> getCap(cache, key, queue, (c, k) -> getLT(c, k, lifetime)));
+        return Pair.of((cache, key, val) -> putCap(cache, key, val, capacity, queue::size, queue::removeLast,
+                queue::addFirst, pair.getKey()), (cache, key) -> getCap(cache, key, queue::addFirst,
+                queue::removeLast, pair.getValue()));
     }
 
     private static Object get(Map<Object, Object> cache, Object key) {
@@ -61,20 +52,21 @@ class PutGetFactory {
         cache.put(key, Pair.of(new Date(), val));
     }
 
-    private static Object getCap(Map<Object, Object> cache, Object key, LinkedList<Object> queue, GetMethod get) {
+    private static Object getCap(Map<Object, Object> cache, Object key, Consumer<Object> add, Supplier<Object> poll,
+                                 GetMethod get) {
         Object val = get.call(cache, key);
         if(val != null) {
-            queue.addFirst(queue.removeLast());
+            add.accept(poll.get());
         }
         return val;
     }
 
-    private static void putCap(Map<Object, Object> cache, Object key, Object val, int capacity,
-                               LinkedList<Object> queue, PutMethod put) {
-        if(queue.size() >= capacity) {
-            cache.remove(queue.removeLast());
+    private static void putCap(Map<Object, Object> cache, Object key, Object val, int capacity, Supplier<Integer> size,
+                               Supplier<Object> poll, Consumer<Object> add, PutMethod put) {
+        if(size.get() >= capacity) {
+            cache.remove(poll.get());
         }
         put.call(cache, key, val);
-        queue.addFirst(key);
+        add.accept(key);
     }
 }
