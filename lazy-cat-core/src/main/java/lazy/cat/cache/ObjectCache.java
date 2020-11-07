@@ -8,28 +8,22 @@ import java.util.function.Supplier;
  */
 public class ObjectCache {
     private final Map<String, MethodCache> cache = new HashMap<>();
+    private final LazyCallMethod lazyCall;
+
+    public ObjectCache(boolean synchronize) {
+        this.lazyCall = LazyCallFactory.createCallMethod(synchronize);
+    }
 
     public void addMethod(String methodName, long lifetime, int capacity) {
         cache.put(methodName, new MethodCache(Objects.requireNonNull(PutGetFactory.createMethods(lifetime, capacity))));
     }
 
-    public Object lazyCall(String methodName, List list, Supplier supplier) {
-        Optional<Object> opt = get(methodName, list);
-        if(opt.isPresent()) return opt.get();
-        Object obj = supplier.get();
-        put(methodName, list, obj);
-        return obj;
+    public Object lazyCall(final String methodName, final List<Object> list, final Supplier<Object> supplier) {
+        return lazyCall.call(cache, methodName, list, supplier);
     }
 
     Map<String, MethodCache> getCache() {
         return cache;
     }
 
-    private Optional<Object> get(String methodName, List<Object> list) {
-        return cache.get(methodName).get(list);
-    }
-
-    private void put(String methodName, List<Object> list, Object val) {
-        cache.get(methodName).put(list, val);
-    }
 }

@@ -28,6 +28,10 @@ public @interface LazyObject {
      */
     String initPrefix() default "";
     /**
+     * @return true if you want to be able to access the object in concurrency mode
+     */
+    boolean synchronize() default false;
+    /**
      * @return standard cache capacity of methods
      */
     int cacheCapacity() default -1;

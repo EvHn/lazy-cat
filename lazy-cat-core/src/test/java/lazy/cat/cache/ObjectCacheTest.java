@@ -12,12 +12,12 @@ import static org.junit.Assert.*;
 
 public class ObjectCacheTest {
 
+    private static final String METHOD = "method";
     private ObjectCache cache;
-    private String METHOD = "method";
 
     @Before
     public void setUp() {
-        cache = new ObjectCache();
+        cache = new ObjectCache(false);
     }
 
     @Test

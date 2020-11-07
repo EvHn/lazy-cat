@@ -28,7 +28,7 @@ class LazyClassCreator {
                 TypeName.get(Float.class), TypeName.get(Short.class), TypeName.get(Byte.class),
                 TypeName.get(Number.class), TypeName.get(String.class), TypeName.get(int.class),
                 TypeName.get(long.class), TypeName.get(double.class), TypeName.get(float.class),
-                TypeName.get(short.class), TypeName.get(byte.class), TypeName.get(void.class));
+                TypeName.get(short.class), TypeName.get(byte.class));
     }
 
     private boolean isPossibleReturnType(TypeMirror typeMirror) {
@@ -52,7 +52,7 @@ class LazyClassCreator {
                 .addField(TypeName.get(ObjectCache.class), "cache", Modifier.PRIVATE)
                 .addMethods(constructors)
                 .addMethod(createInitMethod(els, lazyObject.cacheLifetime(), lazyObject.cacheCapacity(),
-                        lazyObject.initPrefix()))
+                        lazyObject.synchronize(), lazyObject.initPrefix()))
                 .addMethods(methodSpecs)
                 .build();
     }
@@ -84,10 +84,10 @@ class LazyClassCreator {
     }
 
     private MethodSpec createInitMethod(Map<String, ExecutableElement> methods, long lifetime, int capacity,
-                                        String prefix) {
+                                        boolean synchronize, String prefix) {
         MethodSpec.Builder builder = MethodSpec.methodBuilder("init" + prefix)
                 .addModifiers(Modifier.PRIVATE)
-                .addStatement("cache = new lazy.cat.cache.ObjectCache()");
+                .addStatement("cache = new lazy.cat.cache.ObjectCache($L)", synchronize);
         methods.forEach((key, val) -> {
             LazyMethod lm = val.getAnnotation(LazyMethod.class);
             long cacheLifetime = lm.cacheLifetime() != 0L ? lm.cacheLifetime() : lifetime;
