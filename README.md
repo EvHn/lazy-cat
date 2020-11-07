@@ -1,2 +1,2 @@
 # lazy-cat
-library for generating lazy objects
+library for generation lazy objects
